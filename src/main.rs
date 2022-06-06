@@ -4,17 +4,19 @@ use rand::prelude::*;
 use std::collections::{HashMap, HashSet};
 
 //setup
-type MatrixBig = na::SMatrix<f64, 2, 7>;
+type MatrixBig = na::SMatrix<f64, 3, 7>;
 type VectorBig = na::SVector<f64, 7>;
 type DMatrixf64 = na::OMatrix<f64, na::Dynamic, na::Dynamic>;
 fn main() {
     // settings
-    let n = 2;
+    let n = 3;
     let nsamp = 2;
     let seed: u64 = 34;
-
+    let origgenes = vec!["a", "b", "c", "d", "e", "f", "g"];
+    let target = vec!["a", "b", "c"];
     //mock data
-    let m = MatrixBig::from_vec(vec![-100.0, 20.0, 3.0, 4.0, 5.0, 6.0, 7.0,
+    let m = MatrixBig::from_vec(vec![1.0, 2.0, -10.0, 1.0, 1.0, 2.0, 100.0,
+        1.0, 2.0, -10.0, 1.0, 1.0, 2.0, 100.0,
         1.0, 2.0, -10.0, 1.0, 1.0, 2.0, 100.0]
     );
     //get mean, add random noise, order genes
@@ -23,21 +25,18 @@ fn main() {
     let mran = na::SVector::from_vec(ran.clone()) / 1.0e+30;
     let m3 = m2 + mran;
     let mut i: [f64; 7] = m3.into();
-    let origgenes = vec!["a", "b", "c", "d", "e", "f", "g"];
     let mut genes = origgenes.clone();
     let keys: HashMap<_, _> = genes.iter().cloned().zip(i.iter()).collect();
     genes.sort_by(|a, b| keys[a].partial_cmp(keys[b]).unwrap());
     //put into bins
-    
     let groups = genes.len() / n;
     let remains = genes.len() % n;
     let split = (groups + 1)*remains;
     let mut iter = genes[..split].chunks(groups + 1).chain(genes[split..].chunks(groups));
     let res: Vec<&[&str]> = iter.collect();
-    println!("{:?}", res);
-    println!("{:?}", m3);
+    ///println!("{:?}", res);
+    ///println!("{:?}", m3);
     //sample matching bins as controls
-    let target = vec!["a", "b", "f"];
     let mut controls: Vec<&str> = Vec::new();
     for i in 0..res.len() {
         let mut a: HashSet<_> = res[i].iter().cloned().collect();
@@ -46,13 +45,14 @@ fn main() {
         let mut intv: Vec<&str> = intersection.cloned().collect();
         for j in 1..=intv.len() {
             let sample = res[i].iter().choose_multiple(&mut StdRng::seed_from_u64(seed + j as u64), nsamp);
-            println!("{:?}", sample);
+            ///println!("{:?}", sample);
             controls.extend(sample);
         }
     }
     let mut uniqcontrols = HashSet::new();
     controls.retain(|e| uniqcontrols.insert(*e));
     println!("{:?}", uniqcontrols);
+    //calculate controls
     let origind : Vec<usize> = (0..origgenes.len()).collect();
     let origkeys: HashMap<_, _> = origgenes.iter().cloned().zip(origind.iter()).collect();
     let mut indcontrols: Vec<&usize> = Vec::new();
@@ -60,7 +60,16 @@ fn main() {
         indcontrols.push(origkeys[x])
     }
     let mut scorecontrols = m.select_columns(indcontrols.iter().cloned()).column_mean();
-    println!("{:?}", scorecontrols);
+    //calculate tagets
+    let mut indtarget: Vec<&usize> = Vec::new();
+    for x in target {
+        indtarget.push(origkeys[x])
+    }
+    let mut scoretarget = m.select_columns(indtarget.iter().cloned()).column_mean();
+    let mut scores = scoretarget - scorecontrols;
+    ///println!("{:?}", scoretarget);
+    ///println!("{:?}", scorecontrols);
+    println!("{:?}", scores);
 }
 
 //fn cutn(x: Vec<String>, n: usize) -> Vec<&[&str]> {
