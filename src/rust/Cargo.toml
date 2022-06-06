@@ -1,0 +1,15 @@
+[package]
+name = "SCorerustR"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "SCorerustR"
+crate-type = ["cdylib", "lib"] 
+
+[dependencies]
+ferris-says = "0.2.1"
+rand_distr = "0.4.3"
+rand = "0.8.5"
+ndarray = "0.15.4"
+extendr-api = { version = "0.3.1" , features = ["ndarray"] }

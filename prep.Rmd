@@ -1,0 +1,5 @@
+```{r}
+Sys.setenv(PATH = "/Users/rf/.cargo/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/usr/local/ncbi/blast/bin:/Library/TeX/texbin:/opt/X11/bin:/Library/Apple/usr/bin:/Library/Frameworks/Mono.framework/Versions/Current/Commands:/Applications/RStudio.app/Contents/MacOS/postback")
+devtools::load_all(".")
+```
+
