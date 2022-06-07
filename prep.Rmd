@@ -1,5 +1,15 @@
 ```{r}
 Sys.setenv(PATH = "/Users/rf/.cargo/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/usr/local/ncbi/blast/bin:/Library/TeX/texbin:/opt/X11/bin:/Library/Apple/usr/bin:/Library/Frameworks/Mono.framework/Versions/Current/Commands:/Applications/RStudio.app/Contents/MacOS/postback")
+rextendr::clean()
+rextendr::document("/Users/rf/SCorerustR")
 devtools::load_all(".")
+calc_modulescore()
+pass_features(c("ZFP36", "UPF1"))
+pass_mat(as.matrix(SeuratObject::pbmc_small@assays$RNA@data))
+```
+
+```{r}
+remotes::install_github("https://github.com/raysinensis/SCore-rust/", force = TRUE)
+SCorerustR::calc_modulescore()
 ```
 

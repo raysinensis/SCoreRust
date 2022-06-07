@@ -8,5 +8,6 @@ Wrappers to call the faster implementations directly in R are designed as in-pla
 ```
 # current working example
 pass_features(c("ZFP36", "UPF1"))
+pass_mat(as.matrix(SeuratObject::pbmc_small@assays$RNA@data))
 calc_modulescore()
 ```

@@ -8,7 +8,15 @@
 #' @useDynLib SCorerustR, .registration = TRUE
 NULL
 
-#' Pathway scoring for 1 pathway
+#' Return string `"Hello world!"` to R.
 #' @export
-calc <- function() .Call(wrap__calc)
+calc_modulescore <- function() .Call(wrap__calc_modulescore)
+
+#' Return string `"Hello world!"` to R.
+#' @export
+pass_features <- function(features) invisible(.Call(wrap__pass_features, features))
+
+#' Return string `"Hello world!"` to R.
+#' @export
+pass_mat <- function(mat) invisible(.Call(wrap__pass_mat, mat))
 
