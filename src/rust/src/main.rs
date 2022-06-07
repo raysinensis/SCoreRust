@@ -13,28 +13,23 @@ fn pass_mat(mat: ArrayView<f64, Ix2>) {
 /// @export
 #[extendr]
 fn pass_features(features: Vec<String>) {
-    println!("{:?}", features);
+    let v8: Vec<&str> = features.iter().map(AsRef::as_ref).collect();
+    println!("{:?}", v8);
 }
 /// Return string `"Hello world!"` to R.
 /// @export
 #[extendr]
-fn calc_modulescore() -> Vec<f64> {
+fn calc_modulescore(mat: ArrayView<f64, Ix2>, features: Vec<String>, allfeatures: Vec<String>) -> Vec<f64> {
     // settings
-    let n = 3;
-    let nsamp = 2;
+    let n = 10;
+    let nsamp = 10;
     let seed: u64 = 34;
-    let origgenes = vec!["a", "b", "c", "d", "e", "f", "g"];
-    let target = vec!["a", "b", "c"];
+    //let origgenes = vec!["a", "b", "c", "d", "e", "f", "g"];
+    let origgenes: Vec<&str> = allfeatures.iter().map(AsRef::as_ref).collect();
+    //let target = vec!["a", "b", "c"];
+    let target: Vec<&str> = features.iter().map(AsRef::as_ref).collect();
     //mock data
-    let m: Array<f64, _> = array![
-        [1.0, 2.0, -10.0, 1.0, 1.0, 2.0, 200.0, 1.0],
-        [1.0, 2.0, -10.0, 1.0, 1.0, 2.0, 100.0, 1.0],
-        [1.0, 2.0, -10.0, 1.0, 1.0, 2.0, 400.0, 1.0],
-        [1.0, 2.0, -10.0, 1.0, 1.0, 2.0, 100.0, 1.0],
-        [1.0, 2.0, -10.0, 1.0, 1.0, 2.0, 100.0, 1.0],
-        [1.0, 2.0, -10.0, 1.0, 1.0, 2.0, 100.0, 1.0],
-        [1.0, 2.0, -10.0, 1.0, 1.0, 2.0, -100.0, 1.0]
-    ];
+    let m = mat;
     //get mean, add random noise, order genes
     let m2 = m.mean_axis(Axis(1)).unwrap();
     let ran: Vec<f64> = StandardNormal.sample_iter(&mut StdRng::seed_from_u64(seed)).take(m2.len()).collect();
@@ -90,8 +85,19 @@ fn calc_modulescore() -> Vec<f64> {
 }
 
 fn main() {
-    let res = calc_modulescore();
-    println!("{:?}", res);
+    let m: Array<f64, _> = array![
+        [1.0, 2.0, -10.0, 1.0, 1.0, 2.0, 200.0, 1.0],
+        [1.0, 2.0, -10.0, 1.0, 1.0, 2.0, 100.0, 1.0],
+        [1.0, 2.0, -10.0, 1.0, 1.0, 2.0, 400.0, 1.0],
+        [1.0, 2.0, -10.0, 1.0, 1.0, 2.0, 100.0, 1.0],
+        [1.0, 2.0, -10.0, 1.0, 1.0, 2.0, 100.0, 1.0],
+        [1.0, 2.0, -10.0, 1.0, 1.0, 2.0, 100.0, 1.0],
+        [1.0, 2.0, -10.0, 1.0, 1.0, 2.0, -100.0, 1.0]
+    ];
+    let origgenes = vec!["a", "b", "c", "d", "e", "f", "g"];
+    let target = vec!["a", "b", "c"];
+    //let res = calc_modulescore(m.view(), target, origgenes);
+    //println!("{:?}", res);
     let res2 = pass_features(vec!(String::from("ZFP36")));
     let res3 = pass_mat(array![
         [1.0, 2.0, 4.0, 1.0],

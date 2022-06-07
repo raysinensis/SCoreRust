@@ -10,7 +10,7 @@ NULL
 
 #' Return string `"Hello world!"` to R.
 #' @export
-calc_modulescore <- function() .Call(wrap__calc_modulescore)
+calc_modulescore <- function(mat, features, allfeatures) .Call(wrap__calc_modulescore, mat, features, allfeatures)
 
 #' Return string `"Hello world!"` to R.
 #' @export
