@@ -5,6 +5,8 @@ Speed can be workflow altering. By reimplementing pathway (KEGG/Reactome) scorin
 
 Wrappers to call the faster implementations directly in R are designed as in-place replacements for SingleCellExperiment and Seurat workflows.
 
+<img src="inst/bench1.png" width="600" align="center">
+
 ```
 # testing on a small example
 library(tidyverse)
@@ -35,4 +37,3 @@ b <- ggplot(res %>%
   ylab("time (ms)") +
   NoLegend()
 ```
-(inst/bench1.png)
