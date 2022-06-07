@@ -7,5 +7,6 @@ Wrappers to call the faster implementations directly in R are designed as in-pla
 
 ```
 # current working example
-SCorerustR::calc()
+pass_features(c("ZFP36", "UPF1"))
+calc_modulescore()
 ```
