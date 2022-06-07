@@ -12,11 +12,13 @@ Wrappers to call the faster implementations directly in R are designed as in-pla
 library(tidyverse)
 library(Seurat)
 so <- pbmc_small
+
 # yielding similar scores, note that the random sampling isn't exactly the same
 a <- ggplot(data.frame(Seurat = resa, SCore = resb), aes(x = Seurat, y = SCore)) + 
   geom_point(size = 1) +
   theme_classic() +
   coord_fixed()
+  
 # benchmark
 res <- bench::mark(
   Seurat = AddModuleScore(so, features = list(c("LST1", "AIF1", "PSAP", "YWHAB", "MYO1G", "SAT1")), nbin = 10, ctrl = 10),
