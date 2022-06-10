@@ -4,7 +4,7 @@
 \alias{calc_modulescore}
 \title{Return string \code{"Hello world!"} to R.}
 \usage{
-calc_modulescore()
+calc_modulescore(mat, features, allfeatures, nbin, nsample, nthread)
 }
 \description{
 Return string \code{"Hello world!"} to R.

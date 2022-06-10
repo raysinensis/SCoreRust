@@ -1,4 +1,5 @@
 ```{r}
+options(future.globals.maxSize= 8912896000)
 Sys.setenv(PATH = "/Users/rf/.cargo/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/usr/local/ncbi/blast/bin:/Library/TeX/texbin:/opt/X11/bin:/Library/Apple/usr/bin:/Library/Frameworks/Mono.framework/Versions/Current/Commands:/Applications/RStudio.app/Contents/MacOS/postback")
 rextendr::clean()
 rextendr::document("/Users/rf/SCorerustR")
@@ -9,13 +10,51 @@ devtools::load_all(".")
 library(tidyverse)
 library(Seurat)
 so <- pbmc_small
+so <- readRDS("/Users/rf/hsieh/ffpe_spatial_all_harmony.rds")
+paths <- Seurat::cc.genes.updated.2019
+mock_paths <- map(paths, function(x) {
+  intersect(rownames(so), x)
+})
 # testing on a small example
+mock_paths <- map(1:10, function(x) sample(rownames(so), 20 + x%%10))
+mat <- as.matrix(so@assays$Spatial@data)
+gs <- rownames(so@assays$Spatial@data)
+future::plan(future::multisession, workers = 4)
+
 res <- bench::mark(
-  Seurat = AddModuleScore(so, features = list(c("LST1", "AIF1", "PSAP", "YWHAB", "MYO1G", "SAT1")), nbin = 10, ctrl = 10),
-  SCore = calc_modulescore(as.matrix(so@assays$RNA@data),
-                           c("LST1", "AIF1", "PSAP", "YWHAB", "MYO1G", "SAT1"),
-                           rownames(as.matrix(so@assays$RNA@data))),
-  iterations = 50,
+  SCore = furrr::future_map(mock_paths, function(x) {
+    SCorerustR::calc_modulescore(mat,
+                     x,
+                     gs,
+                     nbin = 24,
+                     nsample = 100,
+                     nthread = 0)})
+)
+
+res <- bench::mark(
+  Seurat = AddModuleScore(so, features = mock_paths, ctrl = 100),
+  SCore = furrr::future_map(mock_paths, function(x) {
+    calc_modulescore(mat,
+                     x,
+                     gs,
+                     nbin = 24,
+                     nsample = 100,
+                     nthread = 0)}),
+  SCore1 = map(mock_paths, function(x) {
+    calc_modulescore(mat,
+                     x,
+                     gs,
+                     nbin = 24,
+                     nsample = 100,
+                     nthread = 4)}),
+  SCore2 = furrr::future_map(mock_paths, function(x) {
+    calc_modulescore(mat,
+                     x,
+                     gs,
+                     nbin = 24,
+                     nsample = 100,
+                     nthread = 4)}),
+  iterations = 2,
   check = FALSE
 )
 b <- ggplot(res %>%
@@ -26,9 +65,22 @@ b <- ggplot(res %>%
   geom_boxplot(aes(fill = expression), outlier.shape = NA) +
   geom_jitter(size = 0.5, alpha = 0.5) +
   theme_classic() +
-  ylab("time (ms)") +
+  ylab("time (s)") +
+  ylim(c(0, NA)) +
   NoLegend()
 # yielding similar scores, note that the random sampling isn't exactly the same
+resa <- AddModuleScore(so, features = mock_paths[[2]])$Cluster1
+resb <- calc_modulescore(as.matrix(so@assays$Spatial@data),
+                         mock_paths[[2]],
+                         rownames(so@assays$Spatial@data),
+                         nbin = 24,
+                         nsample = 100, 
+                         nthread = 1)
+resc <- calc_modulescore(as.matrix(so@assays$Spatial@data),
+                         mock_paths[[2]],
+                         rownames(so@assays$Spatial@data),
+                         nbin = 20,
+                         nsample = 10)
 a <- ggplot(data.frame(Seurat = resa, SCore = resb), aes(x = Seurat, y = SCore)) + 
   geom_point(size = 1) +
   theme_classic() +

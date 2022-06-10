@@ -11,5 +11,6 @@ crate-type = ["cdylib", "lib"]
 ferris-says = "0.2.1"
 rand_distr = "0.4.3"
 rand = "0.8.5"
-ndarray = "0.15.4"
+ndarray = { version = "0.15.4", features = ["rayon"] }
 extendr-api = { git = 'https://github.com/extendr/extendr', features = ["ndarray"] }
+rayon = "1.5.3"
