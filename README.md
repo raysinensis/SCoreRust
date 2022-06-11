@@ -15,7 +15,7 @@ Currently, a query of 2000 cells x 3000 pathways 1.01hr on `Seurat::AddModuleSco
 remotes::install_github("https://github.com/raysinensis/SCore-rust/")
 ```
 
-# Belows shows a smaller example
+# Small example
 
 ```
 library(tidyverse)
