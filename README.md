@@ -5,10 +5,19 @@ Speed can be workflow altering. By reimplementing pathway (KEGG/Reactome) scorin
 
 Wrappers to call the faster implementations directly in R are designed as in-place replacements for SingleCellExperiment and Seurat workflows.
 
-<img src="inst/bench1.png" width="600" align="center">
+Currently, a query of 2000 cells x 3000 pathways 1.01hr on `Seurat::AddModuleScore`, vs 23min via R wrapper of rust functions, called by `SCorerustR::calc_modulescore`.
+
+<img src="inst/bench3000.png" width="200" align="center">
+
+# Installation
+```
+# requires rustc (https://doc.rust-lang.org/book/ch01-01-installation.html)
+remotes::install_github("https://github.com/raysinensis/SCore-rust/")
+```
+
+# Belows shows a smaller example
 
 ```
-# testing on a small example
 library(tidyverse)
 library(Seurat)
 so <- pbmc_small
@@ -39,3 +48,5 @@ b <- ggplot(res %>%
   ylab("time (ms)") +
   NoLegend()
 ```
+
+<img src="inst/bench1.png" width="600" align="center">
