@@ -13,6 +13,10 @@ Currently, a query of 10k cells x 3000 pathways takes 1.01 hr on `Seurat::AddMod
 
 ```
 # requires rustc (https://doc.rust-lang.org/book/ch01-01-installation.html)
+
+# may also need to add `cargo` dir to PATH in R to build
+# Sys.setenv(PATH = paste0(system("echo $HOME", intern = TRUE), "/.cargo/bin:",  Sys.getenv()["PATH"]))
+
 remotes::install_github("https://github.com/raysinensis/SCoreRust/")
 ```
 
