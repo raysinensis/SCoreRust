@@ -1,11 +1,11 @@
 [package]
-name = "SCorerustR"
+name = "SCore-rust"
 version = "0.1.0"
 edition = "2021"
 
 [lib]
 name = "SCorerustR"
-crate-type = ["cdylib", "lib"]
+crate-type = ["staticlib"]
 
 [dependencies]
 ferris-says = "0.2.1"
