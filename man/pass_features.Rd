@@ -2,10 +2,10 @@
 % Please edit documentation in R/extendr-wrappers.R
 \name{pass_features}
 \alias{pass_features}
-\title{Return string \code{"Hello world!"} to R.}
+\title{Test passing gene list from R.}
 \usage{
 pass_features(features)
 }
 \description{
-Return string \code{"Hello world!"} to R.
+Test passing gene list from R.
 }

@@ -2,10 +2,10 @@
 % Please edit documentation in R/extendr-wrappers.R
 \name{pass_mat}
 \alias{pass_mat}
-\title{Return string \code{"Hello world!"} to R.}
+\title{Test passing expr matrix from R.}
 \usage{
 pass_mat(mat)
 }
 \description{
-Return string \code{"Hello world!"} to R.
+Test passing expr matrix from R.
 }

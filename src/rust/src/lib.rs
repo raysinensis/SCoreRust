@@ -7,20 +7,20 @@ use std::time::Instant;
 use ndarray::parallel::prelude::*;
 extern crate rayon;
 
-/// Return string `"Hello world!"` to R.
+/// Test passing expr matrix from R.
 /// @export
 #[extendr]
 fn pass_mat(mat: ArrayView<f64, Ix2>) {
     println!("{:?}", mat);
 }
-/// Return string `"Hello world!"` to R.
+/// Test passing gene list from R.
 /// @export
 #[extendr]
 fn pass_features(features: Vec<String>) {
     let v8: Vec<&str> = features.iter().map(AsRef::as_ref).collect();
     println!("{:?}", v8);
 }
-/// Return string `"Hello world!"` to R.
+/// Calculate pathway scoring, similar to Seurat::AddModuleScore
 /// @export
 #[extendr]
 fn calc_modulescore(mat: ArrayView<f64, Ix2>, features: Vec<String>, allfeatures: Vec<String>, nbin: i32, nsample:i32, nthread: i32) -> Vec<f64> {
@@ -131,7 +131,7 @@ fn main() {
 }
 
 extendr_module! {
-    mod SCorerustR;
+    mod SCoreRust;
     fn calc_modulescore;
     fn pass_features;
     fn pass_mat;

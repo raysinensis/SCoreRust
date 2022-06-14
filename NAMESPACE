@@ -3,4 +3,4 @@
 export(calc_modulescore)
 export(pass_features)
 export(pass_mat)
-useDynLib(SCorerustR, .registration = TRUE)
+useDynLib(SCoreRust, .registration = TRUE)

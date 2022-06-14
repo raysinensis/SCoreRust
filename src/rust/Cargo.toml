@@ -1,10 +1,10 @@
 [package]
-name = "SCore-rust"
+name = "SCoreRust"
 version = "0.1.0"
 edition = "2021"
 
 [lib]
-name = "SCorerustR"
+name = "SCoreRust"
 crate-type = ["staticlib"]
 
 [dependencies]

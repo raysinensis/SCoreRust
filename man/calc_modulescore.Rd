@@ -2,10 +2,10 @@
 % Please edit documentation in R/extendr-wrappers.R
 \name{calc_modulescore}
 \alias{calc_modulescore}
-\title{Return string \code{"Hello world!"} to R.}
+\title{Calculate pathway scoring, similar to Seurat::AddModuleScore}
 \usage{
 calc_modulescore(mat, features, allfeatures, nbin, nsample, nthread)
 }
 \description{
-Return string \code{"Hello world!"} to R.
+Calculate pathway scoring, similar to Seurat::AddModuleScore
 }

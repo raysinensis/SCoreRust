@@ -1,6 +1,6 @@
 LIBDIR = ./rust/target/release
-STATLIB = $(LIBDIR)/libSCorerustR.a
-PKG_LIBS = -L$(LIBDIR) -lSCorerustR
+STATLIB = $(LIBDIR)/libSCoreRust.a
+PKG_LIBS = -L$(LIBDIR) -lSCoreRust
 
 all: C_clean
 
