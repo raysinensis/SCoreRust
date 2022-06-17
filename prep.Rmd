@@ -2,13 +2,14 @@
 options(future.globals.maxSize= 8912896000)
 Sys.setenv(PATH = "/Users/rf/.cargo/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/usr/local/ncbi/blast/bin:/Library/TeX/texbin:/opt/X11/bin:/Library/Apple/usr/bin:/Library/Frameworks/Mono.framework/Versions/Current/Commands:/Applications/RStudio.app/Contents/MacOS/postback")
 rextendr::clean()
-rextendr::document("/Users/rf/SCorerustR")
+rextendr::document()
 devtools::load_all(".")
 ```
 
 ```{r}
 library(tidyverse)
 library(Seurat)
+library(SCoreRust)
 so <- pbmc_small
 so <- readRDS("/Users/rf/hsieh/ffpe_spatial_all_harmony.rds")
 paths <- Seurat::cc.genes.updated.2019
@@ -16,14 +17,14 @@ mock_paths <- map(paths, function(x) {
   intersect(rownames(so), x)
 })
 # testing on a small example
-mock_paths <- map(1:10, function(x) sample(rownames(so), 20 + x%%10))
+mock_paths <- map(1:3000, function(x) sample(rownames(so), 20 + x%%10))
 mat <- as.matrix(so@assays$Spatial@data)
 gs <- rownames(so@assays$Spatial@data)
 future::plan(future::multisession, workers = 4)
 
 res <- bench::mark(
   SCore = furrr::future_map(mock_paths, function(x) {
-    SCorerustR::calc_modulescore(mat,
+    SCoreRust::calc_modulescore(mat,
                      x,
                      gs,
                      nbin = 24,
@@ -32,31 +33,14 @@ res <- bench::mark(
 )
 
 res <- bench::mark(
-  Seurat = AddModuleScore(so, features = mock_paths, ctrl = 100),
-  SCore = furrr::future_map(mock_paths, function(x) {
-    calc_modulescore(mat,
-                     x,
-                     gs,
-                     nbin = 24,
-                     nsample = 100,
-                     nthread = 0)}),
-  SCore1 = map(mock_paths, function(x) {
-    calc_modulescore(mat,
-                     x,
-                     gs,
-                     nbin = 24,
-                     nsample = 100,
-                     nthread = 4)}),
-  SCore2 = furrr::future_map(mock_paths, function(x) {
-    calc_modulescore(mat,
-                     x,
-                     gs,
-                     nbin = 24,
-                     nsample = 100,
-                     nthread = 4)}),
-  iterations = 2,
-  check = FALSE
+  Seurat = AddModuleScore(so, features = mock_paths),
+  SCore = calc_module_scores(mat, mock_paths, precal = F),
+  SCore_pre = calc_module_scores(mat, mock_paths),
+  iterations = 3,
+  check = FALSE,
+  memory = F
 )
+saveRDS(res, "/Users/rf/SCorerustR/10kx3000_bench2.rds")
 b <- ggplot(res %>%
          mutate(expression = as.character(expression)) %>%
          select(expression, time) %>%
@@ -86,6 +70,20 @@ a <- ggplot(data.frame(Seurat = resa, SCore = resb), aes(x = Seurat, y = SCore))
   theme_classic() +
   coord_fixed()
 ggsave("bench1.png", cowplot::plot_grid(a, b, rel_widths = c(2, 1)), width = 6, height = 3)
+```
+
+
+```{r}
+mat2 <- do.call(cbind, list(mat, mat, mat, mat, mat, mat, mat, mat, mat))
+res <- bench::mark(
+  R = {data.avg <- Matrix::rowMeans(x = mat); data.avg[order(data.avg)]} %>% names(),
+  rust = SCoreRust::order_expr(mat, gs, 1),
+  rust2 = SCoreRust::order_expr(mat, gs, 2),
+  rust4 = SCoreRust::order_expr(mat, gs, 4),
+  rust8 = SCoreRust::order_expr(mat, gs, 8),
+  iterations = 3,
+  check = F
+)
 ```
 
 ```{r}
