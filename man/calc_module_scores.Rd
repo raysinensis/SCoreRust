@@ -4,7 +4,14 @@
 \alias{calc_module_scores}
 \title{Caluculate Module/Pathway Scores , Parallel on R side}
 \usage{
-calc_module_scores(mat, paths, nbin = 24, nsample = 100, nthread = 4)
+calc_module_scores(
+  mat,
+  paths,
+  nbin = 24,
+  nsample = 100,
+  nthread = 4,
+  precal = T
+)
 }
 \arguments{
 \item{mat}{expression matrix}

@@ -2,6 +2,8 @@
 
 export(calc_module_scores)
 export(calc_modulescore)
+export(calc_modulescore_orderin)
+export(order_expr)
 export(pass_features)
 export(pass_mat)
 useDynLib(SCoreRust, .registration = TRUE)

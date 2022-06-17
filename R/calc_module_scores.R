@@ -11,16 +11,35 @@ calc_module_scores <- function(mat,
                         paths,
                         nbin = 24,
                         nsample = 100,
-                        nthread = 4) {
+                        nthread = 4,
+                        precal = T) {
   gs <- rownames(mat)
-  res <- furrr::future_map(paths, function(x) {
-    calc_modulescore(mat,
-                     x,
-                     gs,
-                     nbin,
-                     nsample,
-                     nthread)
+  paths <- map(paths, function(x) {
+    intersect(gs, x)
   })
+  paths[map(paths, function(x) {length(x) > 5}) %>% unlist()]
+  if (precal) {
+    gorder <- order_expr(mat, gs, 4)
+    res <- furrr::future_map(paths, function(x) {
+      calc_modulescore_orderin(mat,
+                             x,
+                             gs,
+                             nbin,
+                             nsample,
+                             nthread,
+                             gorder)
+    })
+  } else {
+    res <- furrr::future_map(paths, function(x) {
+      calc_modulescore(mat,
+                             x,
+                             gs,
+                             nbin,
+                             nsample,
+                             nthread)
+    })
+  }
+
   res <- do.call(rbind, res)
   colnames(res) <- colnames(mat)
   rownames(res) <- names(paths)

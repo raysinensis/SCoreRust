@@ -20,3 +20,11 @@ pass_features <- function(features) invisible(.Call(wrap__pass_features, feature
 #' @export
 pass_mat <- function(mat) invisible(.Call(wrap__pass_mat, mat))
 
+#' order genes by expression, random breaking ties
+#' @export
+order_expr <- function(mat, allfeatures, nthread) .Call(wrap__order_expr, mat, allfeatures, nthread)
+
+#' Calculate pathway scoring, similar to Seurat::AddModuleScore, with precalculated order
+#' @export
+calc_modulescore_orderin <- function(mat, features, allfeatures, nbin, nsample, nthread, order) .Call(wrap__calc_modulescore_orderin, mat, features, allfeatures, nbin, nsample, nthread, order)
+
