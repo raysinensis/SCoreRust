@@ -5,6 +5,7 @@
 #' @param nbin number of bins to arrange all genes
 #' @param nsample number of genes to sample for each target gene
 #' @param nthread number of threads for parallel processing of many pathways
+#' @param precal option on how background order is calculated, set to TRUE to use same calculations for every pathway, pass vector to use specific order
 #' @return matrix of pathways x cells
 #' @export
 calc_module_scores <- function(mat,
@@ -18,17 +19,30 @@ calc_module_scores <- function(mat,
     intersect(gs, x)
   })
   paths[map(paths, function(x) {length(x) > 5}) %>% unlist()]
-  if (precal) {
-    gorder <- order_expr(mat, gs, 4)
-    res <- furrr::future_map(paths, function(x) {
-      calc_modulescore_orderin(mat,
-                             x,
-                             gs,
-                             nbin,
-                             nsample,
-                             nthread,
-                             gorder)
-    })
+  if (precal != FALSE) {
+    if (length(precal) >1 ) {
+      message("passing precal argument as order...")
+      res <- furrr::future_map(paths, function(x) {
+        calc_modulescore_orderin(mat,
+                                 x,
+                                 gs,
+                                 nbin,
+                                 nsample,
+                                 nthread,
+                                 precal)
+      })
+    } else {
+      gorder <- order_expr(mat, gs, 4)
+      res <- furrr::future_map(paths, function(x) {
+        calc_modulescore_orderin(mat,
+                                 x,
+                                 gs,
+                                 nbin,
+                                 nsample,
+                                 nthread,
+                                 gorder)
+      })
+    }
   } else {
     res <- furrr::future_map(paths, function(x) {
       calc_modulescore(mat,

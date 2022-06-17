@@ -23,6 +23,8 @@ calc_module_scores(
 \item{nsample}{number of genes to sample for each target gene}
 
 \item{nthread}{number of threads for parallel processing of many pathways}
+
+\item{precal}{option on how background order is calculated, set to TRUE to use same calculations for every pathway, pass vector to use specific order}
 }
 \value{
 matrix of pathways x cells
