@@ -1,5 +1,4 @@
-# SCoreRust
-Single Cell Pathway Scoring powered by Rust
+# SCoreRust, Single Cell Pathway Scoring powered by Rust
 
 Speed can be workflow altering. By reimplementing pathway (KEGG/Reactome) scoring algorithms for single cell sequencing, higher analysis throughput, richer insights, and better interactivity can be achieved.
 
