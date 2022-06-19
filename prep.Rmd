@@ -12,6 +12,8 @@ library(Seurat)
 library(SCoreRust)
 so <- pbmc_small
 so <- readRDS("/Users/rf/hsieh/ffpe_spatial_all_harmony.rds")
+DefaultAssay(so) <- "RNA"
+# so <- UpdateSeuratObject(so)
 paths <- Seurat::cc.genes.updated.2019
 mock_paths <- map(paths, function(x) {
   intersect(rownames(so), x)
@@ -33,8 +35,8 @@ res <- bench::mark(
 )
 
 res <- bench::mark(
-  Seurat = AddModuleScore(so, features = mock_paths),
-  SCore = calc_module_scores(mat, mock_paths, precal = F),
+  #Seurat = AddModuleScore(so, features = mock_paths),
+  #SCore = calc_module_scores(mat, mock_paths, precal = F),
   SCore_pre = calc_module_scores(mat, mock_paths),
   iterations = 3,
   check = FALSE,
@@ -53,10 +55,15 @@ b <- ggplot(res %>%
   ylim(c(0, NA)) +
   NoLegend()
 # yielding similar scores, note that the random sampling isn't exactly the same
-resa <- AddModuleScore(so, features = mock_paths[[2]])$Cluster1
-resb <- calc_modulescore(as.matrix(so@assays$Spatial@data),
+resa1 <- AddModuleScore(so, features = mock_paths[[1]])$Cluster1
+resa2 <- AddModuleScore(so, features = mock_paths[[2]])$Cluster1
+resa3 <- AddModuleScore(so, features = mock_paths[[3]])$Cluster1
+resb <- calc_module_scores(mat, mock_paths)
+resbre <- calc_module_scores(mat, mock_paths[3], nrep = 100)
+
+resbb <- calc_modulescore(mat,
                          mock_paths[[2]],
-                         rownames(so@assays$Spatial@data),
+                         rownames(mat),
                          nbin = 24,
                          nsample = 100, 
                          nthread = 1)
@@ -65,13 +72,12 @@ resc <- calc_modulescore(as.matrix(so@assays$Spatial@data),
                          rownames(so@assays$Spatial@data),
                          nbin = 20,
                          nsample = 10)
-a <- ggplot(data.frame(Seurat = resa, SCore = resb), aes(x = Seurat, y = SCore)) + 
+a <- ggplot(data.frame(Seurat = resbre[1,], SCore = resa3), aes(x = Seurat, y = SCore)) + 
   geom_point(size = 1) +
   theme_classic() +
   coord_fixed()
 ggsave("bench1.png", cowplot::plot_grid(a, b, rel_widths = c(2, 1)), width = 6, height = 3)
 ```
-
 
 ```{r}
 mat2 <- do.call(cbind, list(mat, mat, mat, mat, mat, mat, mat, mat, mat))
@@ -87,9 +93,159 @@ res <- bench::mark(
 ```
 
 ```{r}
+ord <- {data.avg <- Matrix::rowMeans(x = mat); data.avg[order(data.avg)]} %>% names()
+data.cut <- cut_number(x = data.avg + rnorm(n = length(data.avg))/1e30, n = 24, labels = FALSE, right = FALSE)
+names(x = data.cut) <- names(x = data.avg)
+
+map(mock_paths, function(features.use) {
+# seurat
+ctrl.use <- c()
+for (j in 1:length(x = features.use)) {
+  temp_bin <- data.cut[which(x = data.cut == data.cut[features.use[j]])]
+  temp <- names(x = sample(
+      x = temp_bin,
+      size = 100,
+      replace = FALSE
+    ))
+  ctrl.use <- c(
+    ctrl.use,
+    temp
+  ) 
+}
+ctrl.use <- list(unique(ctrl.use))
+ctrl.scores <- matrix(
+  data = numeric(length = 1L),
+  nrow = 1,
+  ncol = ncol(mat)
+)
+for (i in 1:length(ctrl.use)) {
+  ctrl.scores[i, ] <- Matrix::colMeans(x = mat[ctrl.use[[1]], ])
+}
+})
+
+# precal
+bac <- matrix(
+  data = numeric(length = 1L),
+  nrow = 20 * max(data.cut),
+  ncol = ncol(mat)
+)
+for (x in 1:max(data.cut)) {
+  for (i in 1:20) {
+    temp_bin <- data.cut[which(data.cut == x)]
+    temp <- names(x = sample(
+        x = temp_bin,
+        size = 100,
+        replace = FALSE
+      ))
+    bac[(i - 1) * 20 + x, ] <- Matrix::colMeans(x = mat[temp, ])
+  }
+}
+map(mock_paths, function(features.use) {
+bac1 <- matrix(
+  data = numeric(length = 1L),
+  nrow = length(features.use),
+  ncol = ncol(mat)
+)
+for (j in 1:length(x = features.use)) {
+  ind <- sample(20, 1) + 20 * (data.cut[features.use[j]] - 1)
+  bac1[j, ] <- bac[ind,]
+}
+Matrix::colMeans(bac1)
+})
+
+# bench
+res <- bench::mark(
+  seurat = {map(mock_paths, function(features.use) {
+  
+# seurat
+ctrl.use <- c()
+for (j in 1:length(x = features.use)) {
+  temp_bin <- data.cut[which(x = data.cut == data.cut[features.use[j]])]
+  temp <- names(x = sample(
+      x = temp_bin,
+      size = 100,
+      replace = FALSE
+    ))
+  ctrl.use <- c(
+    ctrl.use,
+    temp
+  ) 
+}
+ctrl.use <- list(unique(ctrl.use))
+ctrl.scores <- matrix(
+  data = numeric(length = 1L),
+  nrow = 1,
+  ncol = ncol(mat)
+)
+for (i in 1:length(ctrl.use)) {
+  ctrl.scores[i, ] <- Matrix::colMeans(x = mat[ctrl.use[[1]], ])
+}
+})},
+precal = {bac <- matrix(
+  data = numeric(length = 1L),
+  nrow = 20 * max(data.cut),
+  ncol = ncol(mat)
+)
+for (x in 1:max(data.cut)) {
+  for (i in 1:20) {
+    temp_bin <- data.cut[which(data.cut == x)]
+    temp <- names(x = sample(
+        x = temp_bin,
+        size = 100,
+        replace = FALSE
+      ))
+    bac[(i - 1) * 20 + x, ] <- Matrix::colMeans(x = mat[temp, ])
+  }
+}
+map(mock_paths, function(features.use) {
+bac1 <- matrix(
+  data = numeric(length = 1L),
+  nrow = length(features.use),
+  ncol = ncol(mat)
+)
+for (j in 1:length(x = features.use)) {
+  ind <- sample(20, 1) + i * (data.cut[features.use[j]] - 1)
+  bac1[j, ] <- bac[ind,]
+}
+Matrix::colMeans(bac1)
+})},
+iterations = 2,
+check = F
+)
+```
+
+
+```{r}
 remotes::install_github("https://github.com/raysinensis/SCore-rust/", force = TRUE)
 SCorerustR::calc_modulescore()
 pass_features(c("ZFP36", "UPF1"))
 pass_mat(as.matrix(SeuratObject::pbmc_small@assays$RNA@data))
+```
+
+```{r}
+res2 <- readRDS("/Users/rf/SCorerustR/10kx3000_bench.rds")
+res <- readRDS("/Users/rf/SCorerustR/10kx3000_bench2.rds")
+b <- ggplot(res %>%
+              mutate(expression = as.character(expression)) %>%
+              filter(expression %in% c("SCore_pre")) %>% 
+              mutate(expression = ifelse(expression == "SCore_pre", "SCoreRust", expression)) %>% 
+              bind_rows(res2 %>% mutate(expression = as.character(expression)) %>%
+              filter(expression %in% c("Seurat"))) %>% 
+              select(expression, time) %>%
+              unnest_longer(time) %>% 
+              bind_rows(data.frame(expression = "Scanpy", time = bench::as_bench_time(2653))) %>% 
+              bind_rows(data.frame(expression = "Scanpy", time = bench::as_bench_time(2680))) %>% 
+              bind_rows(data.frame(expression = "Scanpy", time = bench::as_bench_time(2583))) %>% 
+              bind_rows(data.frame(expression = "SCoreRust-re", time = bench::as_bench_time(89.28348))) %>% 
+              bind_rows(data.frame(expression = "SCoreRust-re", time = bench::as_bench_time(106.66742))) %>% 
+              bind_rows(data.frame(expression = "SCoreRust-re", time = bench::as_bench_time(119.99710))) %>% 
+              mutate(expression = factor(expression, levels = c("Seurat", "Scanpy", "SCoreRust", "SCoreRust-re"))),
+       aes(x = expression, y = time)) +
+  geom_boxplot(aes(fill = expression), outlier.shape = NA, size = 0.2) +
+  geom_jitter(size = 0.5, alpha = 0.5, height = 0, width = 0.25) +
+  theme_classic() +
+  ylab("time (s)") +
+  ylim(c(0, 4000)) +
+  NoLegend()
 ```
 
