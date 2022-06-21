@@ -5,7 +5,42 @@ use std::collections::{HashMap, HashSet};
 use extendr_api::prelude::*;
 use std::time::Instant;
 use ndarray::parallel::prelude::*;
+use hdf5::types::*;
+use hdf5::{File, Reader};
+use sprs::CsMatBase;
 extern crate rayon;
+
+fn read_h5ad(f: &str) {
+    let file = hdf5::File::open(f).expect("Unable to read file");
+    let indptr = file.dataset("X/indptr").expect("Unable to read file").read_1d::<usize>().expect("Unable to read file").to_vec();
+    let indices = file.dataset("X/indices").expect("Unable to read file").read_1d::<usize>().expect("Unable to read file").to_vec();
+    println!("{:?}", indptr.len());
+    println!("{:?}", indices.len());
+    let data = file.dataset("X/data").expect("Unable to read file").read_1d::<f64>().expect("Unable to read file").to_vec();
+    let var_index_name = file
+        .group("var").expect("Unable to read file")
+        .attr("_index").expect("Unable to read file")
+        .read_scalar::<VarLenUnicode>().expect("Unable to read file");
+    let obs_index_name = file
+        .group("obs").expect("Unable to read file")
+        .attr("_index").expect("Unable to read file")
+        .read_scalar::<VarLenUnicode>().expect("Unable to read file");
+    let var_vec = file
+        .dataset(&format!("var/{}", var_index_name.as_str())).expect("Unable to read file")
+        .read_1d::<VarLenUnicode>().expect("Unable to read file")
+        .to_vec();
+    let obs_vec = file
+        .dataset(&format!("obs/{}", obs_index_name.as_str())).expect("Unable to read file")
+        .read_1d::<VarLenUnicode>().expect("Unable to read file")
+        .to_vec();
+    println!("{:?}", var_vec.len());
+    println!("{:?}", obs_vec.len());
+    println!("{:?}", data.len());
+    let counts_mtx = CsMatBase::new((var_vec.len(), obs_vec.len()), indptr, indices, data);
+    let m2 = counts_mtx.to_dense();
+    let m3 = m2.mean_axis(Axis(1)).unwrap();
+    println!("{:?}", m3.len());
+}
 
 /// Test passing expr matrix from R.
 /// @export
@@ -210,6 +245,7 @@ fn main() {
     let res2 = order_expr(m.view(), origgenes.clone(), 2);
     let res3 = calc_modulescore_orderin(m.clone().view(), target.clone(), origgenes.clone(), 2, 2, 2, res2);
     println!("{:?}", res3);
+    let res4 = read_h5ad("/Users/rfu/SCore-rust-dev/inst/test.h5ad");
     //let res2 = pass_features(vec!(String::from("ZFP36")));
     //let res3 = pass_mat(array![
     //    [1.0, 2.0, 4.0, 1.0],

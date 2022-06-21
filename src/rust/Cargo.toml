@@ -14,3 +14,5 @@ rand = "0.8.5"
 ndarray = { version = "0.15.4", features = ["rayon"] }
 extendr-api = { git = 'https://github.com/extendr/extendr', features = ["ndarray"] }
 rayon = "1.5.3"
+hdf5 = "0.8.1"
+sprs = "0.11.0"
