@@ -10,12 +10,10 @@ use hdf5::{File, Reader};
 use sprs::CsMatBase;
 extern crate rayon;
 
-fn read_h5ad(f: &str) {
+fn read_h5ad(f: &str) -> (ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, Vec<String>) {
     let file = hdf5::File::open(f).expect("Unable to read file");
     let indptr = file.dataset("X/indptr").expect("Unable to read file").read_1d::<usize>().expect("Unable to read file").to_vec();
     let indices = file.dataset("X/indices").expect("Unable to read file").read_1d::<usize>().expect("Unable to read file").to_vec();
-    println!("{:?}", indptr.len());
-    println!("{:?}", indices.len());
     let data = file.dataset("X/data").expect("Unable to read file").read_1d::<f64>().expect("Unable to read file").to_vec();
     let var_index_name = file
         .group("var").expect("Unable to read file")
@@ -33,14 +31,10 @@ fn read_h5ad(f: &str) {
         .dataset(&format!("obs/{}", obs_index_name.as_str())).expect("Unable to read file")
         .read_1d::<VarLenUnicode>().expect("Unable to read file")
         .to_vec();
-    println!("{:?}", var_vec.len());
-    println!("{:?}", obs_vec.len());
-    println!("{:?}", data.len());
     let counts_mtx = CsMatBase::new((var_vec.len(), obs_vec.len()), indptr, indices, data);
-    println!("{:?}", counts_mtx.shape());
+    //println!("{:?}", counts_mtx.shape());
     let m2 = counts_mtx.to_dense();
-    let m3 = m2.mean_axis(Axis(1)).unwrap();
-    println!("{:?}", m3.len());
+    return (m2, var_vec.iter().map(ToString::to_string).collect());
 }
 
 /// Test passing expr matrix from R.
@@ -55,6 +49,48 @@ fn pass_mat(mat: ArrayView<f64, Ix2>) {
 fn pass_features(features: Vec<String>) {
     let v8: Vec<&str> = features.iter().map(AsRef::as_ref).collect();
     println!("{:?}", v8);
+}
+
+/// Precalculate background nrep number of times.
+fn calc_background(mat: ArrayView<f64, Ix2>, allfeatures: Vec<String>, nbin: i32, nsample:i32, nrep: i32, nthread: i32, order: Vec<String>) -> Array<f64, Ix2> {
+    std::env::set_var("RAYON_NUM_THREADS", nthread.to_string());
+    let n = nbin as usize;
+    let nsamp = nsample as usize;
+    let nreps: usize = nrep as usize;
+    let seed: u64 = 34;
+    //get mean, add random noise, order genes
+    let g: Vec<String> = order;
+    let genes: Vec<&str> = g.iter().map(AsRef::as_ref).collect();
+    let origgenes: Vec<&str> = allfeatures.iter().map(AsRef::as_ref).collect();
+    //put into bins
+    let groups = genes.len() / n;
+    let remains = genes.len() % n;
+    let split = (groups + 1)*remains;
+    let iter = genes[..split].chunks(groups + 1).chain(genes[split..].chunks(groups));
+    let res: Vec<&[&str]> = iter.collect();
+    //println!("{:?}",start.elapsed());
+    //sample matching bins as controls
+    let mut controls = Array2::zeros((nreps*res.len(), mat.shape()[1]));
+    println!("{:?}", controls.shape());
+    for i in 0..res.len() {
+        for j in 1..=nreps {
+            let sample = res[i].iter().choose_multiple(&mut StdRng::seed_from_u64(seed + j as u64), nsamp);
+            let origind : Vec<usize> = (0..origgenes.len()).collect();
+            let origkeys: HashMap<_, _> = origgenes.iter().cloned().zip(origind.iter()).collect();
+            let mut indcontrols: Vec<&usize> = Vec::new();
+            for x in sample {
+                indcontrols.push(origkeys[x])
+            }
+            let mut indcontrols2: Vec<usize> = Vec::new();
+            for &x in indcontrols {
+                indcontrols2.push(x)
+            }
+            let mut scorecontrols = Vec::new();
+            mat.select(Axis(0), &indcontrols2).axis_iter(Axis(1)).into_par_iter().map(|row| row.mean().unwrap()).collect_into_vec(&mut scorecontrols);   
+            controls.slice_mut(s![i * nreps + j - 1,..]).assign(&Array::from_vec(scorecontrols));
+        }
+    }
+    return controls;
 }
 
 /// order genes by expression, random breaking ties
@@ -244,9 +280,12 @@ fn main() {
         [1.0, 2.0, -10.0, 1.0, 1.0, 2.0, -100.0, 1.0]
     ];
     let res2 = order_expr(m.view(), origgenes.clone(), 2);
-    let res3 = calc_modulescore_orderin(m.clone().view(), target.clone(), origgenes.clone(), 2, 2, 2, res2);
-    println!("{:?}", res3);
-    let res4 = read_h5ad("/Users/rfu/so.h5ad");
+    //let res3 = calc_modulescore_orderin(m.clone().view(), target.clone(), origgenes.clone(), 2, 2, 2, res2);
+    let res4 = calc_background(m.clone().view(), origgenes.clone(), 2, 2, 2, 2, res2);
+    println!("{:?}", res4);
+    //let (res4, g4) = read_h5ad("/Users/rfu/so.h5ad");
+    //let res5 = order_expr(res4.view(), g4.clone(), 2); 
+    //println!("{:?}", res5[1]);
     //let res2 = pass_features(vec!(String::from("ZFP36")));
     //let res3 = pass_mat(array![
     //    [1.0, 2.0, 4.0, 1.0],
