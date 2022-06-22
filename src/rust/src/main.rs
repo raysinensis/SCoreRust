@@ -37,6 +37,7 @@ fn read_h5ad(f: &str) {
     println!("{:?}", obs_vec.len());
     println!("{:?}", data.len());
     let counts_mtx = CsMatBase::new((var_vec.len(), obs_vec.len()), indptr, indices, data);
+    println!("{:?}", counts_mtx.shape());
     let m2 = counts_mtx.to_dense();
     let m3 = m2.mean_axis(Axis(1)).unwrap();
     println!("{:?}", m3.len());
@@ -245,7 +246,7 @@ fn main() {
     let res2 = order_expr(m.view(), origgenes.clone(), 2);
     let res3 = calc_modulescore_orderin(m.clone().view(), target.clone(), origgenes.clone(), 2, 2, 2, res2);
     println!("{:?}", res3);
-    let res4 = read_h5ad("/Users/rfu/SCore-rust-dev/inst/test.h5ad");
+    let res4 = read_h5ad("/Users/rfu/so.h5ad");
     //let res2 = pass_features(vec!(String::from("ZFP36")));
     //let res3 = pass_mat(array![
     //    [1.0, 2.0, 4.0, 1.0],
