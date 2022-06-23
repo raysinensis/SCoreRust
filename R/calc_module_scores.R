@@ -39,7 +39,12 @@ calc_module_scores <- function(mat,
                                       bins,
                                       nsample = nsample,
                                       nrep = nrep)
-      res <- furrr::future_map(paths, function(x) {
+      #pb <- progress::progress_bar$new(total = length(paths))
+      #pb$tick(0)
+      pb <- progressr::progressor(steps = length(paths))
+      res <- furrr::future_map(paths,.options = furrr::furrr_options(seed = TRUE),  function(x) {
+        #pb$tick()
+        pb()
         pos <- Matrix::colMeans(mat[x,])
         ctrl <- get_background(bac, x, bins, nrep)
         pos - ctrl
@@ -80,16 +85,16 @@ calc_module_scores <- function(mat,
 #' Calculate Module/Pathway background, to be used
 #'
 #' @param mat expression matrix
-#' @param precal gene bin vector to use specific order
+#' @param bins gene bin vector to use specific order
 #' @param nsample number of genes to sample for each target gene
 #' @param nrep number of repeats to calculate sampling of bins
 #' @return matrix of background bin reps x cells
 #' @export
 calc_background_sampling <- function(mat,
-                                     precal,
+                                     bins,
                                      nsample = 100,
                                      nrep = 20) {
-  data.cut <- precal
+  data.cut <- bins
   bac <- matrix(
     data = numeric(length = 1L),
     nrow = nrep * max(data.cut),
@@ -109,6 +114,14 @@ calc_background_sampling <- function(mat,
   bac
 }
 
+#' Construct a Module/Pathway background matrix from gene list
+#'
+#' @param background calculated background expression matrix
+#' @param features vector of genes in pathway
+#' @param bins gene bin vector to use specific order
+#' @param nrep number of repeats to calculate sampling of bins
+#' @return matrix of sampled background # of feature genes x cells
+#' @export
 get_background <- function(background,
                            features,
                            bins,

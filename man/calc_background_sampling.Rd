@@ -4,12 +4,12 @@
 \alias{calc_background_sampling}
 \title{Calculate Module/Pathway background, to be used}
 \usage{
-calc_background_sampling(mat, precal, nsample = 100, nrep = 20)
+calc_background_sampling(mat, bins, nsample = 100, nrep = 20)
 }
 \arguments{
 \item{mat}{expression matrix}
 
-\item{precal}{gene bin vector to use specific order}
+\item{bins}{gene bin vector to use specific order}
 
 \item{nsample}{number of genes to sample for each target gene}
 
