@@ -7,6 +7,7 @@
 #' @param nthread number of threads for parallel processing of many pathways
 #' @param precal option on how background order is calculated, set to TRUE to use same calculations for every pathway, pass vector to use specific order
 #' @param nrep number of repeats to calculate sampling of bins
+#' @param rust use rust (faster but no sparse matrix support) implementations
 #' @return matrix of pathways x cells
 #' @export
 calc_module_scores <- function(mat,
@@ -15,7 +16,8 @@ calc_module_scores <- function(mat,
                         nsample = 100,
                         nthread = 4,
                         precal = T,
-                        nrep = 20) {
+                        nrep = 20,
+                        rust = T) {
   options(future.globals.maxSize= 89128960000)
   gs <- rownames(mat)
   paths <- map(paths, function(x) {
@@ -27,9 +29,13 @@ calc_module_scores <- function(mat,
       message("passing precal argument as order...")
       gorder <- precal
     } else {
-      gorder <- order_expr(mat, gs, 4)
+      if (rust) {
+        gorder <- order_expr(mat, gs, 4)
+      } else {
+        gorder <- order_expr_r(mat, gs)
+      }
     }
-    if (length(paths) > 1) {
+    if (length(paths) >= 50) {
       message(">= 50 pathways detected, calculating background first to avoid repeat calculations...")
       avgs <- 1:length(gorder)
       names(avgs) <- gorder
@@ -39,22 +45,15 @@ calc_module_scores <- function(mat,
                                       bins,
                                       nsample = nsample,
                                       nrep = nrep)
-      #pb <- progress::progress_bar$new(total = length(paths))
-      #pb$tick(0)
       pb <- progressr::progressor(steps = length(paths))
       res <- furrr::future_map(paths,.options = furrr::furrr_options(seed = TRUE),  function(x) {
-        #pb$tick()
         pb()
         pos <- Matrix::colMeans(mat[x,])
         ctrl <- get_background(bac, x, bins, nrep)
         pos - ctrl
-          # calc_modulescore_pos(mat,
-          #                               x,
-          #                               gs,
-          #                               nthread)
       })
       
-    } else {
+    } %>% progressr::with_progress() else {
       res <- furrr::future_map(paths, function(x) {
         calc_modulescore_orderin(mat,
                                  x,
@@ -138,7 +137,13 @@ get_background <- function(background,
   Matrix::colMeans(bac1)
 }
 
-fast_bind_rows_dt <- function(l) {
-  l2 <- map(l, function(x) {as.list(x)})
-  data.table::rbindlist(l2)
+#' Order genes by overall expression
+#'
+#' @param mat expression matrix
+#' @return vector of gene names, high to low
+#' @export
+order_expr_r <- function(mat, 
+                         gs) {
+  data.avg <- Matrix::rowMeans(x = mat[gs,])
+  data.avg[order(data.avg)] %>% names()
 }

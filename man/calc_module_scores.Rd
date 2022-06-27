@@ -11,7 +11,8 @@ calc_module_scores(
   nsample = 100,
   nthread = 4,
   precal = T,
-  nrep = 20
+  nrep = 20,
+  rust = T
 )
 }
 \arguments{
@@ -28,6 +29,8 @@ calc_module_scores(
 \item{precal}{option on how background order is calculated, set to TRUE to use same calculations for every pathway, pass vector to use specific order}
 
 \item{nrep}{number of repeats to calculate sampling of bins}
+
+\item{rust}{use rust (faster but no sparse matrix support) implementations}
 }
 \value{
 matrix of pathways x cells
