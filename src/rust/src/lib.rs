@@ -10,7 +10,13 @@ use hdf5::{File, Reader};
 use sprs::CsMatBase;
 extern crate rayon;
 
+fn append_h5ad(f: &str) {
+    let (res4, g4) = read_h5ad("/Users/rfu/so.h5ad");
+    let file = hdf5::File::append(f).expect("Unable to write file");
+}
+
 fn read_h5ad(f: &str) -> (ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, Vec<String>) {
+    println!("{:?}", "reading...");
     let file = hdf5::File::open(f).expect("Unable to read file");
     let indptr = file.dataset("X/indptr").expect("Unable to read file").read_1d::<usize>().expect("Unable to read file").to_vec();
     let indices = file.dataset("X/indices").expect("Unable to read file").read_1d::<usize>().expect("Unable to read file").to_vec();
@@ -33,6 +39,11 @@ fn read_h5ad(f: &str) -> (ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, Vec<String
         .to_vec();
     let counts_mtx = CsMatBase::new((var_vec.len(), obs_vec.len()), indptr, indices, data);
     //println!("{:?}", counts_mtx.shape());
+    //println!("{:?}", counts_mtx.indptr());
+    let (indptr, indices, data) = counts_mtx.clone().into_raw_storage();
+    //println!("{:?}", indptr);
+    //println!("{:?}", indices);
+    //println!("{:?}", data);
     let m2 = counts_mtx.to_dense();
     return (m2, var_vec.iter().map(ToString::to_string).collect());
 }
@@ -237,7 +248,7 @@ fn calc_modulescore_orderin(mat: ArrayView<f64, Ix2>, features: Vec<String>, all
         indtarget2.push(x)
     }
     let mut scoretarget = Vec::new();
-    mat.select(Axis(0), &indtarget2).axis_iter(Axis(1)).into_par_iter().map(|row| row.mean().unwrap()).collect_into_vec(&mut scoretarget);
+    mat.select(Axis(0), &indtarget2).axis_iter(Axis(0)).into_par_iter().map(|row| row.mean().unwrap()).collect_into_vec(&mut scoretarget);
     let scores = Array::from_vec(scoretarget) - Array::from_vec(scorecontrols);
     //println!("{:?}", start.elapsed());
     //println!("{:?}", scorecontrols);
@@ -283,7 +294,30 @@ fn main() {
     //let res3 = calc_modulescore_orderin(m.clone().view(), target.clone(), origgenes.clone(), 2, 2, 2, res2);
     let res4 = calc_background(m.clone().view(), origgenes.clone(), 2, 2, 2, 2, res2);
     println!("{:?}", res4);
-    //let (res4, g4) = read_h5ad("/Users/rfu/so.h5ad");
+    let (res4, g4) = read_h5ad("/Users/rfu/SCore-rust-dev/inst/test.h5ad");
+    let res5 = res4.view();
+    println!("{:?}", res5.shape());
+    let res6 = ndarray::concatenate(Axis(0),&[res5,res5]).unwrap();
+    println!("{:?}", res6.shape());
+    let res7: CsMatBase<_, usize, Vec<usize>, Vec<usize>, Vec<_>, usize> = CsMatBase::csr_from_dense(res6.view(), -999999.0);
+    //println!("{:?}", res7);
+    let (indptr, indices, data) = res7.clone().into_raw_storage();
+    println!("{:?}", indptr);
+    println!("{:?}", indices);
+    let file = hdf5::File::open_rw("/Users/rfu/SCore-rust-dev/inst/test2.h5ad").expect("Unable to read file");
+    let indicesloc = file.dataset("X/indices").expect("Unable to read file");
+    let indptrloc = file.dataset("X/indptr").expect("Unable to read file");
+    let dataloc = file.dataset("X/data").expect("Unable to read file");
+    let ipd = indptrloc.resize(indptr.len()).expect("Unable to write file");
+    let ind = indicesloc.resize(indices.len()).expect("Unable to write file");
+    let red = dataloc.resize(data.len()).expect("Unable to write file");
+    let res8 = indptrloc.write(&indptr.to_owned()).expect("Unable to write file");
+    let res9 = indicesloc.write(&indices.to_owned()).expect("Unable to write file");
+    let res10 = dataloc.write(&data.to_owned()).expect("Unable to write file");
+   
+
+    //println!("{:?}", data);
+    
     //let res5 = order_expr(res4.view(), g4.clone(), 2); 
     //println!("{:?}", res5[1]);
     //let res2 = pass_features(vec!(String::from("ZFP36")));

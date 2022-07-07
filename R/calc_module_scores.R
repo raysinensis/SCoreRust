@@ -23,7 +23,7 @@ calc_module_scores <- function(mat,
   paths <- map(paths, function(x) {
     intersect(gs, x)
   })
-  paths[map(paths, function(x) {length(x) > 5}) %>% unlist()]
+  paths <- paths[map(paths, function(x) {length(x) > 5}) %>% unlist()]
   if (precal != FALSE) {
     if (length(precal) > 1) {
       message("passing precal argument as order...")
