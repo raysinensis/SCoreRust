@@ -10,9 +10,50 @@ use hdf5::{File, Reader};
 use sprs::CsMatBase;
 extern crate rayon;
 
-fn append_h5ad(f: &str) {
-    let (res4, g4) = read_h5ad("/Users/rfu/so.h5ad");
-    let file = hdf5::File::append(f).expect("Unable to write file");
+fn append_h5ad(fo: &str, f: &str, m: ArrayView<f64, Ix2>, newvars: Vec<String>) {
+    //copy over original file
+    //except for var
+
+    //to sparse
+    let sp_mat: CsMatBase<_, usize, Vec<usize>, Vec<usize>, Vec<_>, usize> = CsMatBase::csr_from_dense(m.view(), -999999.0);
+    let (indptr, indices, data) = sp_mat.clone().into_raw_storage();
+    //get loc
+    let file = hdf5::File::open_rw(f).expect("Unable to read file");
+    let indicesloc = file.dataset("X/indices").expect("Unable to read file");
+    let indptrloc = file.dataset("X/indptr").expect("Unable to read file");
+    let dataloc = file.dataset("X/data").expect("Unable to read file");
+    let shapeloc = file.group("X").expect("Unable to read file").attr("shape").expect("Unable to read file");
+    //append vars
+    let var_index_name = file
+        .group("var").expect("Unable to read file")
+        .attr("_index").expect("Unable to read file")
+        .read_scalar::<VarLenUnicode>().expect("Unable to read file");
+    let varloc = file.dataset(&format!("var/{}", var_index_name.as_str())).expect("Unable to read file");
+    let var_vec = file
+        .dataset(&format!("var/{}", var_index_name.as_str())).expect("Unable to read file")
+        .read_1d::<VarLenUnicode>().expect("Unable to read file")
+        .to_vec();
+    let mut vars: Vec<String> = var_vec.iter().map(ToString::to_string).collect();
+    vars.extend(newvars);
+    let vars_str: Vec<&str> = vars.iter().map(AsRef::as_ref).collect();
+    let mut vars2_: Vec<VarLenUnicode> = Vec::new();
+    for x in vars_str {
+        let mut temp : VarLenUnicode = x.parse().unwrap();
+        vars2_.push(temp)
+    }
+    let vars_ = arr1(&vars2_);
+    println!("{:?}",vars_);
+    //re-shape
+    let ipd = indptrloc.resize(indptr.len()).expect("Unable to write file");
+    let ind = indicesloc.resize(indices.len()).expect("Unable to write file");
+    let red = dataloc.resize(data.len()).expect("Unable to write file");
+    //write
+    let ipr = indptrloc.write(&indptr.to_owned()).expect("Unable to write file");
+    let inr = indicesloc.write(&indices.to_owned()).expect("Unable to write file");
+    let rer = dataloc.write(&data.to_owned()).expect("Unable to write file");
+    let var = varloc.write(&vars_.slice(s![2..232]).to_owned()).expect("Unable to write file");
+    let sha = arr1(&[m.ncols(), m.nrows()]);
+    //let shr = shapeloc.write(&sha).expect("Unable to write file");
 }
 
 fn read_h5ad(f: &str) -> (ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, Vec<String>) {
@@ -299,21 +340,8 @@ fn main() {
     println!("{:?}", res5.shape());
     let res6 = ndarray::concatenate(Axis(0),&[res5,res5]).unwrap();
     println!("{:?}", res6.shape());
-    let res7: CsMatBase<_, usize, Vec<usize>, Vec<usize>, Vec<_>, usize> = CsMatBase::csr_from_dense(res6.view(), -999999.0);
-    //println!("{:?}", res7);
-    let (indptr, indices, data) = res7.clone().into_raw_storage();
-    println!("{:?}", indptr);
-    println!("{:?}", indices);
-    let file = hdf5::File::open_rw("/Users/rfu/SCore-rust-dev/inst/test2.h5ad").expect("Unable to read file");
-    let indicesloc = file.dataset("X/indices").expect("Unable to read file");
-    let indptrloc = file.dataset("X/indptr").expect("Unable to read file");
-    let dataloc = file.dataset("X/data").expect("Unable to read file");
-    let ipd = indptrloc.resize(indptr.len()).expect("Unable to write file");
-    let ind = indicesloc.resize(indices.len()).expect("Unable to write file");
-    let red = dataloc.resize(data.len()).expect("Unable to write file");
-    let res8 = indptrloc.write(&indptr.to_owned()).expect("Unable to write file");
-    let res9 = indicesloc.write(&indices.to_owned()).expect("Unable to write file");
-    let res10 = dataloc.write(&data.to_owned()).expect("Unable to write file");
+    let res7 = append_h5ad("/Users/rfu/SCore-rust-dev/inst/test.h5ad", "/Users/rfu/SCore-rust-dev/inst/test2.h5ad", res6.view(), g4);
+    
    
 
     //println!("{:?}", data);
