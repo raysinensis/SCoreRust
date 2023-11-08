@@ -68,3 +68,6 @@ b <- ggplot(res %>%
 ```
 
 <img src="inst/bench1.png" width="600" align="center">
+
+# Manuscript
+[In situ spatial reconstruction of distinct normal and pathological cell populations within the human adrenal gland](https://doi.org/10.1210/jendso/bvad131)
